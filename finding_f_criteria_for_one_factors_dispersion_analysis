@@ -1,0 +1,121 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.stats as stats
+import math
+
+def sum_of_minus (csv_file, b, c=2):
+    # (list(a)- b)^c ->
+    s = 0
+    for i in csv_file:
+        s = s + math.pow(i - b, c)
+    return s
+
+def mid (csv_file):
+    # arithmetical middle "m" of csv_file
+    # m = float
+    m = float(csv_file.sum()) / csv_file.size
+    return m
+
+def st_dev (csv_file):
+    # sd of csv_file
+    # sd = float
+    sd = math.sqrt(sum_of_minus(csv_file, mid(csv_file))/(csv_file.size - 1))
+    print(sd)
+    return sd
+
+def groups_of_data (csv_file):
+    #number of groups in csv_file (not columns)
+    #csv_file -> int
+    b = [0]
+    i = 1
+    n = 0
+    for i in range(csv_file.size):
+        if b[n] != csv_file[i]:
+            b.append(csv_file[i])
+            n += 1
+    b.remove(0)
+    return b
+
+def f_crit (numpy_arr):
+    # numpy array -> float(f)
+    f = (numpy_arr[0, 1]/numpy_arr[1, 1])/(numpy_arr[0, 2]/numpy_arr[1, 2])
+    return f
+
+
+full_csv = pd.read_csv('https://stepik.org/media/attachments/lesson/8083/genetherapy.csv', header=0)
+print(full_csv)
+print('')
+
+#find mean for A, B, C, D
+m_a = mid(full_csv[full_csv["Therapy"] == "A"]['expr'])
+print("m_a: ", m_a)
+m_b = mid(full_csv[full_csv["Therapy"] == "B"]['expr'])
+print("m_b: ", m_b)
+m_c = mid(full_csv[full_csv["Therapy"] == "C"]['expr'])
+print("m_c: ", m_c)
+m_d = mid(full_csv[full_csv["Therapy"] == "D"]['expr'])
+print("m_d: ", m_d)
+m_list = [m_a, m_b, m_c, m_d]
+
+# find sd for A, B, C, D (sd_a, sd_b, sd_c, sd_d)
+print("sd_a:")
+sd_a = st_dev(full_csv[full_csv["Therapy"] == "A"]['expr'])
+print("sd_b:")
+sd_b = st_dev(full_csv[full_csv["Therapy"] == "B"]['expr'])
+print("sd_c:")
+sd_c = st_dev(full_csv[full_csv["Therapy"] == "C"]['expr'])
+print("sd_d:")
+sd_d = st_dev(full_csv[full_csv["Therapy"] == "D"]['expr'])
+sd_list = [sd_a, sd_b, sd_c, sd_d]
+
+# find middle of all
+middle_of_all = mid(full_csv['expr'])
+print('middle_of_all:', middle_of_all)
+print('')
+
+#find sst, ssb:
+sst = sum_of_minus(full_csv['expr'], middle_of_all)
+df_sst = full_csv.size - 1
+ssb = sum_of_minus(m_list, middle_of_all) * len(full_csv[full_csv["Therapy"] == "A"]['expr'])
+df_ssb = len(groups_of_data(full_csv["Therapy"])) - 1
+
+#find ssw
+ssw_float = mid_float = 0.0
+ssw_list = mid_list = []
+groups = groups_of_data(full_csv["Therapy"])
+for i in range(len(groups)):
+    ssw_float = sum_of_minus(full_csv[full_csv["Therapy"] == groups[i]]['expr'], m_list[i])
+    ssw_list.append(ssw_float)
+ssw_float = sum(ssw_list)
+df_ssw = full_csv['expr'].size - len(groups)
+
+#full massive of sums of squares
+sum_square = np.array([[sst, ssb, ssw_float],[df_sst, df_ssb, df_ssw]])
+print(sum_square)
+f = f_crit(sum_square)
+print("F = ", f)
+
+#print q-q plot
+ax1 = plt.subplot(221)
+stats.probplot(full_csv[full_csv["Therapy"] == "A"]['expr'], dist="norm", plot=plt)
+ax1.set_title(u'A')
+ax2 = plt.subplot(222)
+stats.probplot(full_csv[full_csv["Therapy"] == "B"]['expr'], dist="norm", plot=plt)
+ax2.set_title(u'B')
+ax3 = plt.subplot(223)
+stats.probplot(full_csv[full_csv["Therapy"] == "C"]['expr'], dist="norm", plot=plt)
+ax3.set_title(u'C')
+ax4 = plt.subplot(224)
+stats.probplot(full_csv[full_csv["Therapy"] == "D"]['expr'], dist="norm", plot=plt)
+ax4.set_title(u'D')
+plt.show()
+
+#print box-plot
+plt.errorbar(x=['therapy A', 'therapy B', 'therapy C', 'therapy D'], y=m_list, yerr=sd_list, color="red", capsize=3, marker="s", markersize=5, mfc="black", mec="black")
+plt.title('STEPIK')
+plt.grid()
+plt.xlabel('therapy')
+plt.ylabel('valu+error')
+plt.show()
+plt.show()
