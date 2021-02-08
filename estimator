@@ -28,21 +28,24 @@ class Estimator:
         activation_1 = 'tanh'
         activation_2 = 'sigmoid'
         activation_3 = 'softmax'
-        #initializing the model:
+        #initializer for the model:
         initializer = keras.initializers.TruncatedNormal(mean=0., stddev=1.)
+        # I will use the sequential model of keras
         model = Sequential()
+        # first layer
         model.add(Dense(50, input_dim=train_x.shape[1],
                         kernel_initializer='zeros',
                         bias_initializer=initializer,
                         activation=activation_1))
+        # inside layers
         for row in range(2):
             model.add(Dense(100**(1/(row+1)),
                              kernel_initializer='zeros',
                              bias_initializer=initializer,
                              activation=activation_2))
             model.add(Dropout(0.5))
+        # last layer with 2 neurons for binary classification
         model.add(Dense(2,
-            #            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
                         kernel_initializer='zeros',
                         bias_initializer=initializer,
                         activation=activation_3))
@@ -60,7 +63,7 @@ class Estimator:
         model.summary()
         model_fit = model.fit(train_x, train_y, verbose=verbose, batch_size=batch_size, epochs=epochs,
                     shuffle=True, validation_split=0.2)
-
+        ## Saving the model in .pickle format
         with open(SAVED_ESTIMATOR, 'wb') as pickle_file:
               pickle.dump(model.get_config(), pickle_file)
               pickle.dump(model.get_weights(), pickle_file)
@@ -75,7 +78,10 @@ class Estimator:
         predicted = np.argmax(predicted, axis=1)
         predicted = pd.Series(predicted, index=test_x.index)
         return predicted
-
+        
+#### Testing the Estimator class        
+# train.csv - is training dataset from Titanic competition
+# val.csv - is test dataset from Titanic competition for testing by dru-bot
 train_set = pd.read_csv('D:\\dru_lab\\last_project\\data\\train.csv', header=0)
 test_set = pd.read_csv('D:\\dru_lab\\last_project\\data\\val.csv', header=0)
 
