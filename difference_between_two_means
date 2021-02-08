@@ -4,6 +4,7 @@ import pandas as pd
 import pylab
 import scipy.stats as stats
 
+# for standart deviation
 def sum_of_minus(a, b, c=2):
     # (list(a)- b)^c ->
     s = 0
@@ -11,12 +12,14 @@ def sum_of_minus(a, b, c=2):
         s = s + math.pow(i - b, c)
     return s
 
+# for finding probablity from table
 def find_p(a, df):
     # a - t-founded t-criteria
     # b - df
     idf = 0
     a_l = []
-
+    
+    # this file contain the table of probability from df
     full_csv = pd.read_csv('D:/stat/criterias/t_criteria.csv', sep=';')
     df_list = full_csv['DF\P']
     for i in df_list:
