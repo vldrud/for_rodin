@@ -1,0 +1,111 @@
+import pickle
+import json
+import numpy as np
+import pandas as pd
+
+from tensorflow import keras
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Dense, Dropout
+from keras.models import Sequential
+from settings.constants import SAVED_ESTIMATOR
+
+if __name__ == '__main__':
+    from dataloader import DataLoader
+else:
+    from .dataloader import DataLoader
+
+
+class Estimator:
+
+    @staticmethod
+    def fit(train_x, train_y):
+        # converting datasets into numpy
+        print(train_x.columns)
+        train_x = train_x.to_numpy()
+        train_y = pd.get_dummies(train_y)
+        ##### create the model
+        ###activation function
+        activation_1 = 'tanh'
+        activation_2 = 'sigmoid'
+        activation_3 = 'softmax'
+        #initializing the model:
+        initializer = keras.initializers.TruncatedNormal(mean=0., stddev=1.)
+        model = Sequential()
+        model.add(Dense(50, input_dim=train_x.shape[1],
+                        kernel_initializer='zeros',
+                        bias_initializer=initializer,
+                        activation=activation_1))
+        for row in range(2):
+            model.add(Dense(100**(1/(row+1)),
+                             kernel_initializer='zeros',
+                             bias_initializer=initializer,
+                             activation=activation_2))
+            model.add(Dropout(0.5))
+        model.add(Dense(2,
+            #            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                        kernel_initializer='zeros',
+                        bias_initializer=initializer,
+                        activation=activation_3))
+        # hyperparameters
+        learning_rate = 0.006
+        batch_size = 20
+        epochs = 1500
+        verbose = 2
+        #loss-function
+        loss = 'binary_crossentropy'
+        #compiling the model
+        opt = keras.optimizers.Nadam(learning_rate=learning_rate)
+        model.compile(optimizer=opt, loss='mae', metrics=['accuracy'])
+        # fit the model
+        model.summary()
+        model_fit = model.fit(train_x, train_y, verbose=verbose, batch_size=batch_size, epochs=epochs,
+                    shuffle=True, validation_split=0.2)
+
+        with open(SAVED_ESTIMATOR, 'wb') as pickle_file:
+              pickle.dump(model.get_config(), pickle_file)
+              pickle.dump(model.get_weights(), pickle_file)
+              pickle.dump(learning_rate, pickle_file)
+        pickle_file.close()
+        return model
+
+    @staticmethod
+    def predict(test_x, trained_model):
+        # prediction
+        predicted = trained_model.predict(test_x)
+        predicted = np.argmax(predicted, axis=1)
+        predicted = pd.Series(predicted, index=test_x.index)
+        return predicted
+
+train_set = pd.read_csv('D:\\dru_lab\\last_project\\data\\train.csv', header=0)
+test_set = pd.read_csv('D:\\dru_lab\\last_project\\data\\val.csv', header=0)
+
+#train_set_preproc
+train_set = DataLoader(train_set)
+train_set = train_set.load_data()
+train_set_y = train_set['Survived']
+train_set_x = train_set.drop(columns='Survived')
+#test_set_preproc
+test_set = DataLoader(test_set).load_data()
+print('$')
+test_set_y = test_set['Survived']
+test_set_x = test_set.drop(columns='Survived')
+test_set_x = DataLoader(test_set_x).add_forgotten_columns(train_set_x)
+#train_set_x preproc because some columns was in test_set not in train_set
+train_set_x= DataLoader(train_set_x).add_forgotten_columns(test_set_x)
+print('###########', test_set_y, train_set_y)
+print(test_set_x, train_set_x)
+print('1', test_set_x.shape, train_set_x.shape)
+
+estimator = Estimator.fit(train_set_x, train_set_y)
+print(estimator)
+estimator.evaluate(test_set_x.to_numpy(), pd.get_dummies(test_set_y))
+pred = Estimator.predict(test_set_x, estimator)
+
+i, j = 0, 0
+
+for row in pred:
+    if row == test_set_y[i]:
+        j += 1
+    i += 1
+
+print(j / test_set_y.shape[0])
