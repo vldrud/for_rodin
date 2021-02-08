@@ -1,0 +1,80 @@
+import math
+import matplotlib.pyplot as plt
+import pandas as pd
+import pylab
+import scipy.stats as stats
+
+def sum_of_minus(a, b, c=2):
+    # (list(a)- b)^c ->
+    s = 0
+    for i in a:
+        s = s + math.pow(i - b, c)
+    return s
+
+def find_p(a, df):
+    # a - t-founded t-criteria
+    # b - df
+    idf = 0
+    a_l = []
+
+    full_csv = pd.read_csv('D:/stat/criterias/t_criteria.csv', sep=';')
+    df_list = full_csv['DF\P']
+    for i in df_list:
+        idf += 1
+        if df <= i:
+            df = int(idf - 1)
+            break
+        else:
+            if (df > max(df_list)):
+                df = int(max(df_list))
+                break
+    p = full_csv[['0.20', '0.10', '0.05', '0.02', '0.01', '0.005', '0.002', '0.001']].loc[df]
+    col = ['0.20', '0.10', '0.05', '0.02', '0.01', '0.005', '0.002', '0.001']
+    print(p.size)
+    if a < p[0]:
+        return 0.2
+    if a > p[p.size - 1]:
+        return 0.001
+    for i in range(p.size):
+        if a <= p[i]:
+            if (p[i] - a)<(a - p[i-1]):
+                return col[i]
+            else:
+                return col[i-1]
+                
+                
+# data
+v1 = [84.7, 105, 98.9, 97.9, 108.7, 81.3, 99.4, 89.4, 93, 119.3, 99.2, 99.4, 97.1, 112.4, 99.8, 94.7, 114, 95.1, 115.5, 111.5]
+v2 = [57.2, 68.6, 104.4, 95.1, 89.9, 70.8, 83.5, 60.1, 75.7, 102, 69, 79.6, 68.9, 98.6, 76, 74.8, 56, 55.6, 69.4, 59.5]
+
+# counting the size
+n1 = n2 = int(0)
+for i in v1:
+    n1 = n1 + 1
+for i in v2:
+    n2 = n2 + 1
+
+# mean
+m1 = sum(v1) / n1
+m2 = sum(v2) / n2
+# standart deviation
+sd1 = math.sqrt(sum_of_minus(v1, m1)/(n1 - 1))
+sd2 = math.sqrt(sum_of_minus(v2, m2)/(n2 - 1))
+
+# se, t-crit and df
+se = math.sqrt(math.pow(sd1, 2)/n1 + math.pow(sd2, 2)/n2)
+t = (m1 - m2)/se
+df = n1 + n2 -2
+print('v1: ', n1, " ", m1, " ", sd1)
+print('v2: ', n2, ' ', m2, " ", sd2)
+print('t:', t)
+
+#using the function find_p
+p = find_p(t, df)
+print('p:', p)
+
+# printing qq-plot
+stats.probplot(v1, dist="norm", plot=pylab)
+#stats.probplot(v2, dist="norm", plot=pylab)
+pylab.show()
+
